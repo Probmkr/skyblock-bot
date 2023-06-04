@@ -5,3 +5,4 @@ from disnake.ext import commands
 
 
 CmdBot: TypeAlias = commands.Bot
+DATA_PREF = "data"
