@@ -1,0 +1,12 @@
+/*
+!/.gitignore
+
+# ignore
+__pycache__
+
+# needed files
+!/requirements.txt
+!/run.sh
+
+# source directory
+!/src
