@@ -1,8 +1,9 @@
+import glob
 import json
 import disnake
 from disnake.ext import commands, tasks
 from var import DATA_PREF, CmdBot
-from lib import logger
+from lib import ITEMS_DATA, logger
 from api import Bazaar, hpapi, mcapi
 import re
 import pprint
@@ -59,21 +60,42 @@ class Skyblock(commands.Cog):
 
     class BazaarDropdown(disnake.ui.StringSelect):
         sended: disnake.MessageInteraction
+        original_inter: disnake.AppCmdInter
 
-        def __init__(self, select_list: list[str]):
+        def __init__(self, select_list: list[str], inter):
             options = [disnake.SelectOption(label=i) for i in select_list]
             super().__init__(
                 placeholder="項目を選択してください...",
                 min_values=1,
-                max_values=len(options),
+                max_values=len(options) if len(options) <= 20 else 20,
                 options=options,
             )
             self.sended = None
+            self.original_inter = inter
 
         async def callback(self, inter: disnake.MessageInteraction):
+            if inter.author != self.original_inter.author:
+                await inter.response.send_message(
+                    embed=lib.get_embed(
+                        embed_type="error",
+                        description="他人の `/bazaar detail` にはインタラクションできません\n自分で実行してください",
+                    ),
+                    ephemeral=True,
+                )
             embeds: list[disnake.Embed] = []
+            files: list[disnake.File] = []
             bazaar_data = lib.get_bazaar_data()["products"]
             for item in inter.values:
+                material = ""
+                try:
+                    material = ITEMS_DATA["items"][item]["material"]
+                except:
+                    pass
+                item_png = glob.glob(
+                    f"**/{material.lower()}.png",
+                    root_dir="data/textures",
+                    recursive=True,
+                )
                 item_data = bazaar_data[item]
                 needed = [
                     "buyPrice",
@@ -83,24 +105,31 @@ class Skyblock(commands.Cog):
                     "sellVolume",
                     "sellMovingWeek",
                 ]
-                fields = [{"name": i, "value": f'`{int(item_data["quick_status"][i]):,}`'} for i in needed]
-                embeds.append(
-                    lib.get_embed(
-                        embed_type="info",
-                        title=item,
-                        description=f"`{item}` の詳細",
-                        inline=True,
-                        fields=fields,
-                        url=f"https://skyblock.finance/items/{item}"
-                    )
+                fields = [
+                    {"name": i, "value": f'`{int(item_data["quick_status"][i]):,}`'}
+                    for i in needed
+                ]
+                embed = lib.get_embed(
+                    embed_type="info",
+                    title=item,
+                    description=f"`{item}` の詳細",
+                    inline=True,
+                    fields=fields,
+                    url=f"https://skyblock.finance/items/{item}",
                 )
-            logger.debug(self.sended, "sended")
+                if item_png:
+                    file = disnake.File(
+                        open(f"data/textures/{item_png[0]}", "br"), f"{material}.png"
+                    )
+                    files.append(file)
+                    embed.set_thumbnail(url=f"attachment://{material}.png")
+                embeds.append(embed)
             if self.sended:
-                await self.sended.edit_original_message(embeds=embeds)
+                await self.sended.edit_original_message(embeds=embeds, files=files)
                 await inter.response.send_message()
                 await inter.delete_original_message()
             else:
-                await inter.response.send_message(embeds=embeds)
+                await inter.response.send_message(embeds=embeds, files=files)
                 self.sended = inter
 
     async def fetch_items(self):
@@ -145,18 +174,18 @@ class Skyblock(commands.Cog):
             )
 
     @bazaar.sub_command(
-        name="detail",
+        name="details",
         description="get detail of items",
         options=[
             disnake.Option(
                 name="search_string",
                 description="separated by space",
                 type=disnake.OptionType.string,
-                required=True,
+                required=True
             )
         ],
     )
-    async def detail(self, inter: disnake.AppCmdInter, search_string: str):
+    async def details(self, inter: disnake.AppCmdInter, search_string: str):
         item_list = self.search_for_list(search_string)
         if 20 < len(item_list):
             await inter.response.send_message(
@@ -165,13 +194,13 @@ class Skyblock(commands.Cog):
                 )
             )
             return
-        elif len(item_list) < 1:
+        if len(item_list) < 1:
             await inter.response.send_message(
                 embed=lib.get_embed(embed_type="error", description="見つかりませんでした")
             )
             return
         view = disnake.ui.View()
-        select = self.BazaarDropdown(item_list)
+        select = self.BazaarDropdown(item_list, inter)
         view.add_item(select)
         view.on_error = None
         await inter.response.send_message(view=view)
