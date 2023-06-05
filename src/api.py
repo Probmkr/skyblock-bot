@@ -1,7 +1,9 @@
 from typing import TypedDict
 import aiohttp
 from env import API_KEY
-from lib import logger
+from logger import Logger
+
+logger = Logger()
 
 
 class MCAPI:
