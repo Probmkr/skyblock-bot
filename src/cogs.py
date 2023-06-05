@@ -103,11 +103,21 @@ class Skyblock(commands.Cog):
                 await inter.response.send_message(embeds=embeds)
                 self.sended = inter
 
+    async def fetch_items(self):
+        data = await hpapi.fetch_items()
+        logger.info("updating items", "fet_item")
+        lib.set_items_data(data)
+        logger.info("updated items", "fet_item")
+
+    @commands.Cog.listener(name="on_ready")
+    async def on_ready(self):
+        await self.fetch_items()
+
     @tasks.loop(minutes=5)
     async def fetch_bazaar(self):
         data = await hpapi.fetch_bazaar()
         lib.set_bazaar_data(data)
-        logger.debug("updated bazaar data", "bazaar_cog")
+        logger.debug("updated bazaar data", "fet_bazaar")
 
     @commands.slash_command(name="bazaar", description="commands about bazaar")
     async def bazaar(self, inter):

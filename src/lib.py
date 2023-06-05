@@ -1,6 +1,6 @@
 import json
 from typing import Any, Literal
-from api import Bazaar
+from api import Bazaar, Items
 from logger import Logger
 import disnake
 
@@ -10,6 +10,7 @@ from var import DATA_PREF
 logger = Logger()
 
 bazaar_data_path = f"{DATA_PREF}/bazaar.json"
+item_data_path = f"{DATA_PREF}/items.json"
 
 
 def get_bazaar_data():
@@ -18,6 +19,13 @@ def get_bazaar_data():
 
 def set_bazaar_data(data: Bazaar):
     json.dump(data, open(bazaar_data_path, "w"))
+
+def get_items_data():
+    data: Items = json.load(open(item_data_path))
+    return data
+
+def set_items_data(data: Items):
+    json.dump(data, open(item_data_path, "w"))
 
 embed_types = {
     "error": {"title": "Error", "color": disnake.Color.red()},

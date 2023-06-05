@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Literal, TypedDict
 import aiohttp
 from env import API_KEY
 from logger import Logger
@@ -20,6 +20,28 @@ class MCAPI:
                 return False
             json = await res.json()
             return json["id"]
+
+
+class Stats(TypedDict):
+    pass
+
+
+class Item(TypedDict):
+    material: str
+    durability: int
+    skin: str
+    name: str
+    glowing: bool
+    category: str
+    tier: Literal["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "DIVINE", "VERY SPECIAL"]
+    npc_cell_price: int
+    id: str
+
+
+class Items(TypedDict):
+    success: bool
+    lastUpdated: int
+    items: dict[str, Item]
 
 
 class BazaarSummary(TypedDict):
@@ -63,6 +85,18 @@ class HypixelAPI:
 
     def get_session(self):
         return aiohttp.ClientSession(self.api_pref)
+
+    async def fetch_items(self) -> Items | bool:
+        async with self.get_session() as session:
+            endpoint = "/resources/skyblock/items"
+            res = await session.get(endpoint)
+            if res.status == 200:
+                json = await res.json()
+                items = json["items"]
+                json["items"] = {i["id"]: i for i in items}
+                return json
+            else:
+                return False
 
     async def fetch_bazaar(self) -> Bazaar | bool:
         async with self.get_session() as session:
