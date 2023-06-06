@@ -15,7 +15,7 @@ class MCAPI:
     async def fetchUUID(self, player_name: str) -> str | bool:
         endpoint = f"/users/profiles/minecraft/{player_name}"
         async with aiohttp.ClientSession(self.api_pref) as session:
-            res = await session.get(self.api_pref)
+            res = await session.get(endpoint)
             if res.status == 204:
                 return False
             json = await res.json()

@@ -84,19 +84,8 @@ class Skyblock(commands.Cog):
                     ephemeral=True,
                 )
             embeds: list[disnake.Embed] = []
-            files: list[disnake.File] = []
             bazaar_data = lib.get_bazaar_data()["products"]
             for item in inter.values:
-                material = ""
-                try:
-                    material = items_data["items"][item]["material"]
-                except:
-                    pass
-                item_png = glob.glob(
-                    f"**/{material.lower()}.png",
-                    root_dir="data/textures",
-                    recursive=True,
-                )
                 item_data = bazaar_data[item]
                 needed = [
                     "buyPrice",
@@ -118,22 +107,16 @@ class Skyblock(commands.Cog):
                     fields=fields,
                     url=f"https://skyblock.finance/items/{item}",
                 )
-                if item_png:
-                    file = disnake.File(
-                        open(f"data/textures/{item_png[0]}", "br"), f"{material}.png"
-                    )
-                    files.append(file)
-                    embed.set_thumbnail(url=f"attachment://{material}.png")
                 embeds.append(embed)
             if self.sended:
-                await self.sended.edit_original_response(embeds=embeds, files=files)
+                await self.sended.edit_original_response(embeds=embeds)
                 try:
                     await inter.response.send_message("")
                     await inter.delete_original_message()
                 except:
                     pass
             else:
-                await inter.response.send_message(embeds=embeds, files=files)
+                await inter.response.send_message(embeds=embeds)
                 self.sended = inter
 
     async def fetch_items(self):
