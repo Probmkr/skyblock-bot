@@ -27,7 +27,7 @@ def get_items_data():
 def set_items_data(data: Items):
     json.dump(data, open(item_data_path, "w"))
 
-ITEMS_DATA = get_items_data()
+items_data = None
 
 embed_types = {
     "error": {"title": "Error", "color": disnake.Color.red()},

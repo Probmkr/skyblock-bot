@@ -3,7 +3,7 @@ import json
 import disnake
 from disnake.ext import commands, tasks
 from var import DATA_PREF, CmdBot
-from lib import ITEMS_DATA, logger
+from lib import items_data, logger
 from api import Bazaar, hpapi, mcapi
 import re
 import pprint
@@ -37,6 +37,7 @@ class Other(commands.Cog):
 
 class Skyblock(commands.Cog):
     bot: CmdBot
+    sended: disnake.AppCmdInter
 
     def __init__(self, bot: CmdBot) -> None:
         super().__init__()
@@ -88,7 +89,7 @@ class Skyblock(commands.Cog):
             for item in inter.values:
                 material = ""
                 try:
-                    material = ITEMS_DATA["items"][item]["material"]
+                    material = items_data["items"][item]["material"]
                 except:
                     pass
                 item_png = glob.glob(
@@ -125,9 +126,12 @@ class Skyblock(commands.Cog):
                     embed.set_thumbnail(url=f"attachment://{material}.png")
                 embeds.append(embed)
             if self.sended:
-                await self.sended.edit_original_message(embeds=embeds, files=files)
-                await inter.response.send_message()
-                await inter.delete_original_message()
+                await self.sended.edit_original_response(embeds=embeds, files=files)
+                try:
+                    await inter.response.send_message("")
+                    await inter.delete_original_message()
+                except:
+                    pass
             else:
                 await inter.response.send_message(embeds=embeds, files=files)
                 self.sended = inter
@@ -141,6 +145,7 @@ class Skyblock(commands.Cog):
     @commands.Cog.listener(name="on_ready")
     async def on_ready(self):
         await self.fetch_items()
+        lib.items_data = lib.get_items_data()
 
     @tasks.loop(minutes=5)
     async def fetch_bazaar(self):
